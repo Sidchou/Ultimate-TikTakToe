@@ -7,9 +7,19 @@ using UnityEngine.UI;
  
 public class GameBoard : MonoBehaviour
 {
+    [Header("Info")]
     public int boardID = -1;
 
-    public bool scored = false; 
+    public bool scored = false;
+
+    [Header("normal")]
+    public Image normalButtonImage;
+    public Button normalButton;
+    public AudioClip normalCircleClip;
+    public AudioClip normalCrossClip;
+    public AudioSource normalAudioSource;
+
+    [Header("Cache")]
 
     private List<PlayableButton> buttons;
     [SerializeField]
@@ -17,7 +27,7 @@ public class GameBoard : MonoBehaviour
     [SerializeField]
     private List<int> cross;
     [SerializeField]
-    Animator animator;
+    public Animator animator;
 
     private void Awake()
     {
@@ -26,8 +36,14 @@ public class GameBoard : MonoBehaviour
     }
     private void OnEnable()
     {
+        GameManager.OnStartBoard += StartGame; 
+
         GameManager.OnResetBoard += ResetBoard;
         PlayableButton.OnPlay += PlayPiece;
+
+        normalButtonImage = GetComponent<Image>();
+        normalButton = GetComponent<Button>();
+
         buttons = GetComponentsInChildren<PlayableButton>().ToList();
     }
     private void OnDisable()
@@ -35,17 +51,14 @@ public class GameBoard : MonoBehaviour
         GameManager.OnResetBoard -= ResetBoard;
         PlayableButton.OnPlay -= PlayPiece;
      }
-
+    #region Ultimate
 
     public void PlayPiece(PlayableButton button)
-    {
-
+    { 
         if (button.boardID == boardID)
         {
             CheckBoard(button);
-            Debug.Log("board "+ boardID + " scored? " + scored);
-
-
+           // Debug.Log("board "+ boardID + " scored? " + scored);
         }
         if (button.playableID == boardID)
         {
@@ -55,12 +68,11 @@ public class GameBoard : MonoBehaviour
             }
             else
             {
-                GameManager.Instance.SetBoard(true);
-
+                GameManager.Instance.SetBoard(true); 
             }
         }
     }
-
+    //Check Local Victory
     void CheckBoard(PlayableButton button)
     {
         if (GameManager.Instance.turns)
@@ -68,9 +80,7 @@ public class GameBoard : MonoBehaviour
             circles.Add(button.playableID);
             if (GameManager.Instance.CheckVictory(circles))
             {
-                scored = true;
-                 GameManager.Instance.circles.Add(boardID);
-                animator.SetTrigger("Circle");
+                PlayPiece(true);
             }
         }
         else
@@ -78,9 +88,7 @@ public class GameBoard : MonoBehaviour
             cross.Add(button.playableID);
             if (GameManager.Instance.CheckVictory(cross))
             {
-                scored = true;
-                 GameManager.Instance.cross.Add(boardID);
-                animator.SetTrigger("Cross");
+                PlayPiece(false);
             }
         }
         if (circles.Count + cross.Count == 9)
@@ -101,14 +109,102 @@ public class GameBoard : MonoBehaviour
             b.button.interactable = set;
         }
     }
+
+
+    #endregion
+
+    #region Normal
+
+    public void PlayNormal()
+    {
+        if (!scored)
+        {
+            normalButtonImage.enabled = false;
+            normalButton.enabled = false;
+            PlayPiece(GameManager.Instance.turns);
+            GameManager.Instance.CheckBigBoard();
+
+            GameManager.Instance.DisplayTurn();
+        }
+    }
+    #endregion
+
+
+    #region Manager
+
+    private void PlayPiece(bool circle)
+    {
+        animator.ResetTrigger("Reset");
+
+        scored = true;
+
+        if (circle)
+        {
+            GameManager.Instance.circles.Add(boardID);
+            PlayCircle();
+            animator.SetTrigger("Circle");
+        }
+        else
+        {
+            GameManager.Instance.cross.Add(boardID);
+            PlayCross();
+            animator.SetTrigger("Cross");
+        }
+    }
+
+    public void PlayCircle()
+    {
+        animator.ResetTrigger("Reset");
+        animator.SetTrigger("Circle");
+        normalAudioSource.clip = normalCircleClip;
+        normalAudioSource.Play();
+    }
+    public void PlayCross()
+    {
+        animator.ResetTrigger("Reset");
+        animator.SetTrigger("Cross");
+        normalAudioSource.clip = normalCrossClip;
+        normalAudioSource.Play();
+    }
+
     public void ResetBoard()
     {
+        animator.ResetTrigger("Circle");
+        animator.ResetTrigger("Cross");
         scored = false;
         circles.Clear();
         cross.Clear();
         animator.SetTrigger("Reset");
         SetButtons(true);
-        //animator.ResetTrigger("Reset");
+
+        StartGame();
     }
 
+    void StartGame()
+    {
+        switch (GameManager.Instance.currentMode)
+        {   
+            case GameManager.GameMode.Ultimate:
+                StartMode(true);
+                break;
+            case GameManager.GameMode.Normal:
+                StartMode(false);
+                break;
+            case GameManager.GameMode.Limit:
+                StartMode(false);
+                break;
+            default:
+                break;
+        }
+    }
+    void StartMode(bool ultimate)
+    {
+        foreach (var b in buttons)
+        {
+            b.gameObject.SetActive(ultimate);
+        }
+        normalButtonImage.enabled = !ultimate;
+        normalButton.enabled = !ultimate;
+    }
+    #endregion
 }

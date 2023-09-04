@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using System.Linq;
+using UnityEngine.Events;
 
 public class GameManager : MonoBehaviour
 {
@@ -12,6 +13,14 @@ public class GameManager : MonoBehaviour
     static public GameManager Instance
     { get { return _instance; } }
 
+    public enum GameMode
+    {
+        Ultimate,
+        Normal,
+        Limit
+    }
+    [Tooltip("Ultimate, Normal, Limit")]
+    public GameMode currentMode;
     [SerializeField]
     Image turnCircle;
     [SerializeField]
@@ -37,7 +46,11 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     TMP_Text result;
 
+    public UnityEvent OnStartGame;
+    public static Action OnStartBoard;
+
     public static Action OnResetBoard;
+
     void Awake()
     {
         _instance = this;
@@ -45,32 +58,59 @@ public class GameManager : MonoBehaviour
     void OnEnable()
     {
         PlayableButton.OnPlay += PlayPiece;
-        gameBoards = FindObjectsByType<GameBoard> (FindObjectsSortMode.None).ToList();
-
+        gameBoards = FindObjectsByType<GameBoard>(FindObjectsSortMode.None).ToList();
+        gameBoards =  gameBoards.OrderBy(e => e.name).ToList();
     }
 
-    public void PlayPiece(PlayableButton button)
+    private void OnDisable()
     {
-        // Debug.Log(button.gameObject.name);
+        PlayableButton.OnPlay -= PlayPiece;
+    }
 
+    //General
+    //Change UI Display Turn
+    public void DisplayTurn()
+    {
+        
         if (turns)
         {
-            button.PlayCircle();
             turnCircle.enabled = false;
             turnCross.enabled = true;
         }
         else
         {
-            button.PlayCross();
             turnCircle.enabled = true;
             turnCross.enabled = false;
         }
-        Invoke("ChangeTurns",0.01f);
+        if (currentMode == GameMode.Limit)
+        {
+            Invoke("LimitedPlay", 0.1f);
+
+            Invoke("ChangeTurns", 0.2f);
+        }
+        else
+        {
+            Invoke("ChangeTurns", 0.01f);
+        }
     }
+    //Change player
     public void ChangeTurns()
     {
         turns = !turns;
     }
+
+    #region Ultimate
+    //play piece (Ultimate)
+    public void PlayPiece(PlayableButton button)
+    {
+        if (turns)
+            button.PlayCircle();
+        else
+            button.PlayCross();
+
+        DisplayTurn();
+    }
+     // check buttons on board
     [ContextMenu("setboard")]
     public void SetBoard(bool toSet)
     {
@@ -108,7 +148,46 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+    #endregion
 
+    #region Limit
+    void LimitedPlay()
+    {
+
+        if (turns)
+        {
+            if (circles.Count > 3)
+            {
+                gameBoards[circles[0]].animator.ResetTrigger("Circle");
+                LimitBoard(circles[0]);
+
+                circles.RemoveAt(0);
+            }
+        }
+        else
+        {
+            if (cross.Count > 3)
+            {
+                gameBoards[cross[0]].animator.ResetTrigger("Cross");
+                LimitBoard(cross[0]);
+
+                cross.RemoveAt(0);
+            }
+        }
+    }
+    void LimitBoard(int i)
+    {
+        gameBoards[i].scored = false;
+        gameBoards[i].normalButtonImage.enabled = true;
+        gameBoards[i].normalButton.enabled = true;
+
+        gameBoards[i].animator.SetTrigger("Reset");
+
+    }
+
+    #endregion
+    //General
+    #region GameManaging
     public bool CheckVictory(List<int> checkList)
     {
         //rows
@@ -160,6 +239,7 @@ public class GameManager : MonoBehaviour
         }
         return false;
     }
+    
     public void CheckBigBoard()
     {
         if (GameManager.Instance.CheckVictory(circles))
@@ -178,6 +258,7 @@ public class GameManager : MonoBehaviour
 
     public void ShowResult(string txt)
     {
+        CancelInvoke("LimitedPlay");
         lines[lineID].SetTrigger("Draw");
         Invoke("ShowResult", 0.5f);
         result.text = txt;
@@ -186,15 +267,27 @@ public class GameManager : MonoBehaviour
     {
         resultContainer.SetActive(true);
     }
+
+
     public void ResetBoard()
     {
         OnResetBoard?.Invoke();
-        lines[lineID].SetTrigger("Reset");
         turns = false;
         resultContainer.SetActive(false);
         circles.Clear();
         cross.Clear();
-        lines[lineID].ResetTrigger("Reset");
 
+        foreach (var l in lines)
+        {
+            l.SetTrigger("Reset");
+        }
+        lineID = -1;
     }
+    public void StartGame(int mode)
+    {
+        currentMode = (GameMode) mode;
+        OnStartGame?.Invoke();
+        OnStartBoard?.Invoke();
+    }
+    #endregion
 }

@@ -40,8 +40,20 @@ public class PlayableButton : MonoBehaviour
         playableID = gameObject.name[gameObject.name.LastIndexOf("(") + 1];
         playableID -= (int)'0';
         board = GetComponentInParent<GameBoard>();
+        if (board == null)
+        {
+            Debug.LogError(playableID + " GameBoard is null!");
+        }
         boardID = board.boardID;
 
+    }
+    private void Start()
+    {
+        //not sure why sometimes board id wont set on enable
+        if (boardID == -1)
+        {
+            boardID = board.boardID;
+        }
     }
 
 
@@ -49,29 +61,35 @@ public class PlayableButton : MonoBehaviour
     {
         if (!played)
         {
-            OnPlay?.Invoke(this);
             played = true;
+            button.interactable = false;
+            OnPlay?.Invoke(this);
             
         }
     }
 
     public void PlayCircle()
     {
+        animator.ResetTrigger("Reset");
         animator.SetTrigger("Circle");
         audioSource.clip = circleClip;
         audioSource.Play();
     }
     public void PlayCross()
     {
+        animator.ResetTrigger("Reset");
         animator.SetTrigger("Cross");
         audioSource.clip = crossClip;
         audioSource.Play();
     }
     public void ResetBoard()
     {
+        animator.ResetTrigger("Circle");
+        animator.ResetTrigger("Cross");
         animator.SetTrigger("Reset");
         played = false;
 
     }
+
 }
 
