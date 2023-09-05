@@ -13,14 +13,18 @@ public class GameBoard : MonoBehaviour
     public bool scored = false;
 
     [Header("normal")]
+    [SerializeField]
     public Image normalButtonImage;
+    [SerializeField] 
     public Button normalButton;
+    [SerializeField] 
     public AudioClip normalCircleClip;
+    [SerializeField] 
     public AudioClip normalCrossClip;
+    [SerializeField] 
     public AudioSource normalAudioSource;
 
     [Header("Cache")]
-
     private List<PlayableButton> buttons;
     [SerializeField]
     private List<int> circles;
@@ -125,6 +129,13 @@ public class GameBoard : MonoBehaviour
             GameManager.Instance.CheckBigBoard();
 
             GameManager.Instance.DisplayTurn();
+        }
+    }
+    public void PlayAiNormal()
+    {
+        if (!scored)
+        {
+            normalButton.onClick.Invoke();
         }
     }
     #endregion

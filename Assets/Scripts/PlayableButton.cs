@@ -59,7 +59,7 @@ public class PlayableButton : MonoBehaviour
 
     public void PlayButton()
     {
-        if (!played)
+        if (!played && !GameManager.Instance.hasResult)
         {
             played = true;
             button.interactable = false;

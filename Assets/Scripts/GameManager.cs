@@ -6,7 +6,7 @@ using TMPro;
 using System;
 using System.Linq;
 using UnityEngine.Events;
-
+ 
 public class GameManager : MonoBehaviour
 {
     static private GameManager _instance;
@@ -21,6 +21,8 @@ public class GameManager : MonoBehaviour
     }
     [Tooltip("Ultimate, Normal, Limit")]
     public GameMode currentMode;
+
+    public AI ai; 
     [SerializeField]
     Image turnCircle;
     [SerializeField]
@@ -45,6 +47,7 @@ public class GameManager : MonoBehaviour
     GameObject resultContainer;
     [SerializeField]
     TMP_Text result;
+    public bool hasResult=false;
 
     public UnityEvent OnStartGame;
     public static Action OnStartBoard;
@@ -71,7 +74,6 @@ public class GameManager : MonoBehaviour
     //Change UI Display Turn
     public void DisplayTurn()
     {
-        
         if (turns)
         {
             turnCircle.enabled = false;
@@ -97,8 +99,12 @@ public class GameManager : MonoBehaviour
     public void ChangeTurns()
     {
         turns = !turns;
-    }
 
+        if (ai.aiEnabled )
+        {
+            Invoke("AiPlayerTurn", 0.2f);
+        }
+    }
     #region Ultimate
     //play piece (Ultimate)
     public void PlayPiece(PlayableButton button)
@@ -186,8 +192,45 @@ public class GameManager : MonoBehaviour
     }
 
     #endregion
-    //General
     #region GameManaging
+    //AI
+    public void EnableAi()
+    {
+        ai.aiEnabled = true;
+    }
+    void AiPlayerTurn()
+    {
+            if (ai.aiTurn == turns)
+            {
+                ai.aiMask.SetActive(true);
+            int bestMove = ai.GetBestScore();
+                AIPlaying(bestMove);
+            }
+            else
+            {
+                ai.aiMask.SetActive(false);
+            }
+        
+    }
+    //public List<int> GetAvailable(ref List<int> cir, ref List<int> cros)
+    //{
+    //    List<int> boards = new ();
+    //    cir = new List<int>(circles);
+    //    cros = new List<int>(cross);
+    //     for (int i = 0; i < gameBoards.Count; i++)
+    //    {
+    //        if (!gameBoards[i].scored)
+    //        {
+    //             boards.Add(i);
+    //        }
+    //    }
+    //     return boards;
+    //}
+    public void AIPlaying(int i)
+    {
+        gameBoards[i].PlayAiNormal();
+    }
+    //general
     public bool CheckVictory(List<int> checkList)
     {
         //rows
@@ -245,20 +288,23 @@ public class GameManager : MonoBehaviour
         if (GameManager.Instance.CheckVictory(circles))
         {
             ShowResult("Circle Win");
-        }
-        if (GameManager.Instance.CheckVictory(cross))
+        }else if (GameManager.Instance.CheckVictory(cross))
         {
+
             ShowResult("Cross Win");
-        }
-        if (circles.Count + cross.Count + tie.Count >= 9)
+        }else if (circles.Count + cross.Count + tie.Count >= 9)
         {
-            ShowResult("Tie");
+            hasResult = true;
+            result.text = "Tie";
+            Invoke("ShowResult", 0.5f);
         }
     }
 
     public void ShowResult(string txt)
     {
+        hasResult = true;
         CancelInvoke("LimitedPlay");
+        lines[lineID].ResetTrigger("Reset");
         lines[lineID].SetTrigger("Draw");
         Invoke("ShowResult", 0.5f);
         result.text = txt;
@@ -271,6 +317,7 @@ public class GameManager : MonoBehaviour
 
     public void ResetBoard()
     {
+        hasResult = false;
         OnResetBoard?.Invoke();
         turns = false;
         resultContainer.SetActive(false);
@@ -279,9 +326,20 @@ public class GameManager : MonoBehaviour
 
         foreach (var l in lines)
         {
+            l.ResetTrigger("Draw");
             l.SetTrigger("Reset");
         }
         lineID = -1;
+        //ai
+        if (ai.aiEnabled)
+        { 
+            ai.aiMask.SetActive(false); ;
+            ai.aiTurn = !ai.aiTurn;
+            if (ai.aiTurn == turns)
+            {
+                Invoke("AiPlayerTurn", 0.1f);
+            }
+        }
     }
     public void StartGame(int mode)
     {

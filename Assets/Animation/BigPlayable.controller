@@ -109,7 +109,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Image
+  m_Name: BigPlayable
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: Circle
@@ -184,7 +184,7 @@ AnimatorStateMachine:
     m_Position: {x: 140, y: 370, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -1146598255523060175}
-    m_Position: {x: 290, y: 200, z: 0}
+    m_Position: {x: 310, y: 140, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 312708668696530729}
     m_Position: {x: 450, y: 380, z: 0}
@@ -194,8 +194,8 @@ AnimatorStateMachine:
   m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
   m_AnyStatePosition: {x: 50, y: 20, z: 0}
-  m_EntryPosition: {x: 310, y: 80, z: 0}
-  m_ExitPosition: {x: 280, y: 520, z: 0}
+  m_EntryPosition: {x: 390, y: 40, z: 0}
+  m_ExitPosition: {x: 290, y: 560, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
   m_DefaultState: {fileID: -1146598255523060175}
 --- !u!1101 &7303888135961394513
